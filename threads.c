@@ -17,8 +17,10 @@ uint8_t running;
 
 void __attribute__((naked)) TIMER0_IRQHandler()
 {
-    // Push the link register (so we can preserve it through TIM_*)
+    // Clear the interrupt flag
     LPC_TIM0->IR |= TIM_IR_CLR(TIM_MR0_INT);
+    
+    // if we're not running, PSP won't be assigned and we'll hard-fault.
     if(running)
     {
         // Save the registers
@@ -26,9 +28,11 @@ void __attribute__((naked)) TIMER0_IRQHandler()
                 "STMDB r12!, {r4-r11,LR};"
                 "MSR PSP, r12;"
             );
+        // Save out the stack pointer
         tasks[lastTask].stack = (void*)__get_PSP();
     }
 
+    // Find a new task to run
     lastTask++;
     while(1)
     {
@@ -36,6 +40,7 @@ void __attribute__((naked)) TIMER0_IRQHandler()
             lastTask = 0;
         if(tasks[lastTask].inUse)
         {
+            // Restore the PSP
             __set_PSP((uint32_t)tasks[lastTask].stack);
             running = 1;
             break;
@@ -43,8 +48,7 @@ void __attribute__((naked)) TIMER0_IRQHandler()
         lastTask++;
     }
     
-    
-
+    // Restore registers, restore PSP and jump back
     __asm__("MRS r12, PSP;");
     __asm__("LDMFD r12!, {r4-r11,LR};");
     __asm__("MSR PSP, r12;");
@@ -63,14 +67,14 @@ void thread_init(uint32_t quantaUs)
     running = 0;
 
     timCfg.PrescaleOption = TIM_PRESCALE_USVAL;
-    timCfg.PrescaleValue = 10;
+    timCfg.PrescaleValue = 1;
     
     matCfg.MatchChannel = 0;
     matCfg.IntOnMatch = TRUE;
     matCfg.ResetOnMatch = TRUE;
     matCfg.StopOnMatch = FALSE;
     matCfg.ExtMatchOutputType = TIM_EXTMATCH_NOTHING;
-    matCfg.MatchValue = 1;
+    matCfg.MatchValue = quantaUs;
     
     TIM_Init(LPC_TIM0, TIM_TIMER_MODE, &timCfg);
     TIM_ConfigMatch(LPC_TIM0, &matCfg);
@@ -92,8 +96,9 @@ void thread_init(uint32_t quantaUs)
 void thread_go()
 {
     uint32_t msp;
-    usbcon_write("Starting threading system\r\n");
+    //usbcon_write("Starting threading system\r\n");
 
+    // Just incase...
     msp = __get_MSP();
     __set_PSP(msp);
     
@@ -106,7 +111,7 @@ void thread_go()
     __set_CONTROL(CONTROL);
     __ISB();
     
-
+    // Hang and wait to be pre-empted
     while(1);
 }
 
@@ -129,10 +134,12 @@ int thread_create(void (*run)(void))
     stack = (uint32_t*)malloc(STACK_SIZE);
     if(stack == 0)
         return -1;
+        
+    // Remember...stacks grow downwards
     stack = (uint32_t*)((uintptr_t)stack + STACK_SIZE);
     
     // Init the stack according to the calling conventions
-    *(--stack) = 0x21000000; // xPSR
+    *(--stack) = 0x21000000; // xPSR - apparently this is the default value
     *(--stack) = (uint32_t)run; // Program counter
     *(--stack) = 0x0; // Link register. Don't bother with it for now
     *(--stack) = 0x00; // r12

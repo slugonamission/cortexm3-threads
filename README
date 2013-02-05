@@ -4,7 +4,7 @@ Cortex M3 platform.
 
 This requires the CMSIS libraries to build, and has been tested using CodeSourcery compilers.
 
-First, call `thread_init` to init the system. `quantaUs` is currently ignored. Create a thread
+First, call `thread_init` to init the system. `quantaUs` specifies the time quanta in microseconds. Create a thread
 using `thread_create(fnc)` and kill it using `thread_kill`. Finally, call `thread_go` to set 
 everything in motion. **`thread_go` does not return** - instead, use main as a bootstrap and
 use the first registered thread an your master routine.

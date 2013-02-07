@@ -9,6 +9,4 @@ using `thread_create(fnc)` and kill it using `thread_kill`. Finally, call `threa
 everything in motion. **`thread_go` does not return** - instead, use main as a bootstrap and
 use the first registered thread an your master routine.
 
-There is currently no mechanism to pass userdata, this will be added in future (or just add it now
-by setting any userdata to r0 when starting a thread). Also, a thread returning will cause a fault,
-which again will be fixed in future.
+A thread returning from its routine will cause a hard fault, this will be fixed in future.

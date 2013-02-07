@@ -115,7 +115,7 @@ void thread_go()
     while(1);
 }
 
-int thread_create(void (*run)(void))
+int thread_create(void (*run)(void*), void* userdata)
 {
     // Find a free thing
     int threadId = 0;
@@ -146,7 +146,7 @@ int thread_create(void (*run)(void))
     *(--stack) = 0x00; // r3
     *(--stack) = 0x00; // r2
     *(--stack) = 0x00; // r1    
-    *(--stack) = 0xDEADBEEF; // r0
+    *(--stack) = (uint32_t)userdata; // r0
     *(--stack) = 0xFFFFFFFD; // LR
     *(--stack) = 0x00; // r11
     *(--stack) = 0x00; // r10

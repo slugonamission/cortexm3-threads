@@ -3,9 +3,12 @@
 
 void test(void* userdata)
 {
+    int x = 0;
     while(1)
     {
         usbcon_write((char*)userdata);
+        if(x++ == 10)
+            return;
     }
 }
 

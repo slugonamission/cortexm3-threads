@@ -7,5 +7,6 @@ void thread_init(uint32_t quantaUs);
 void thread_go(); // THIS WILL NEVER RETURN
 int thread_create(void (*run)(void*), void* userdata);
 void thread_kill(int thread_id);
+void thread_self_term();
 
 #endif

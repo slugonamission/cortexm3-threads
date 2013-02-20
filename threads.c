@@ -183,12 +183,9 @@ void thread_kill(int thread_id)
 
 void thread_self_term()
 {
-    usbcon_write("Terminating thread\r\n");
-    
     // This will kill the stack. For now, disable context switches to save ourselves.
     enable_cs = 0;
     thread_kill(lastTask);
-    usbcon_write("Thread killed\r\n");
     enable_cs = 1;
 
     // And now wait for death to kick in
